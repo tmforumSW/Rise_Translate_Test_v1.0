@@ -72,6 +72,7 @@
   var originalText = new WeakMap();  // text node -> original value
   var originalAttr = new WeakMap();  // element -> { attr: original value }
   var currentLang = "en";
+  var lastApplied = null;
   var translating = false;
   var rerunQueued = false;
   var parentControls = false;
@@ -192,8 +193,11 @@
     currentLang = lang || "en";
     var sel = document.getElementById("tc-lang");
     if (sel && sel.value !== currentLang) sel.value = currentLang;
+    if (currentLang === lastApplied) return;   // already showing this language
+    lastApplied = currentLang;
     if (currentLang === "en") { resetAll(); return; }
     applyLanguage(currentLang).catch(function (e) {
+      lastApplied = null;   // allow a retry after a failure
       setStatus("error: " + e.message + " (endpoint blocked or rate limited)");
     });
   }

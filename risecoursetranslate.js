@@ -213,6 +213,12 @@
 
   /* ── INIT ──────────────────────────────────────────────────────── */
   function init() {
+    // Keep code blocks in sync as Rise mounts them on scroll and on lesson
+    // change. A block ignores a repeat of the language it already shows, so
+    // this stays cheap.
+    setInterval(function () {
+      broadcastLangToBlocks(activeTranslation || getSavedLang() || 'en');
+    }, 1500);
     injectStyles();
     loadGlossary(function () {
       if (!document.getElementById(BAR_ID)) injectBar();
