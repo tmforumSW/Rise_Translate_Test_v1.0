@@ -73,6 +73,7 @@
   var originalAttr = new WeakMap();  // element -> { attr: original value }
   var currentLang = "en";
   var lastApplied = null;
+  var applyGen = 0;
   var translating = false;
   var rerunQueued = false;
   var parentControls = false;
@@ -130,39 +131,77 @@
     });
   }
 
+  function cacheGet(lang, src) {
+    var key = lang + "|" + src;
+    return Object.prototype.hasOwnProperty.call(cache, key) ? cache[key] : null;
+  }
+  function langName(lang) {
+    for (var i = 0; i < LANGS.length; i++) if (LANGS[i].code === lang) return LANGS[i].name;
+    return lang;
+  }
+
   async function applyLanguage(lang) {
     if (!root) return;
+    var myGen = ++applyGen;          // a newer call supersedes this one
     translating = true;
-    var count = 0;
     try {
       var nodes = collectTextNodes();
-      for (var i = 0; i < nodes.length; i++) {
-        var node = nodes[i];
-        if (!originalText.has(node)) originalText.set(node, node.nodeValue);
-        var original = originalText.get(node);
-        var src = original.trim();
-        var r = await lookup(src, lang);
-        node.nodeValue = original.replace(src, r.value);
-        count++;
-        setStatus("translating... " + count);
-      }
       var attrs = collectAttrTargets();
-      for (var j = 0; j < attrs.length; j++) {
-        var t = attrs[j];
+
+      // Gather the unique English source strings to translate.
+      var uniq = {};
+      nodes.forEach(function (node) {
+        if (!originalText.has(node)) originalText.set(node, node.nodeValue);
+        var s = originalText.get(node).trim();
+        if (s) uniq[s] = true;
+      });
+      attrs.forEach(function (t) {
         if (!originalAttr.has(t.el)) originalAttr.set(t.el, {});
         var store = originalAttr.get(t.el);
         if (store[t.attr] === undefined) store[t.attr] = t.el.getAttribute(t.attr);
-        var asrc = store[t.attr].trim();
-        var ar = await lookup(asrc, lang);
-        t.el.setAttribute(t.attr, ar.value);
+        var s = store[t.attr].trim();
+        if (s) uniq[s] = true;
+      });
+      var list = Object.keys(uniq);
+
+      // Translate uniques with limited concurrency, filling the cache.
+      var idx = 0, done = 0;
+      async function worker() {
+        while (idx < list.length) {
+          if (myGen !== applyGen) return;
+          var s = list[idx++];
+          await lookup(s, lang);
+          done++;
+          setStatus("translating " + done + "/" + list.length);
+        }
       }
-      setStatus(LANGS.filter(function (l) { return l.code === lang; }).map(function (l) { return l.name; })[0] || lang);
+      var pool = [];
+      for (var p = 0; p < 6; p++) pool.push(worker());
+      await Promise.all(pool);
+      if (myGen !== applyGen) return;   // superseded, do not paint stale text
+
+      // Write everything from cache in one fast pass.
+      nodes.forEach(function (node) {
+        var original = originalText.get(node);
+        var src = original.trim();
+        var val = cacheGet(lang, src);
+        if (val != null) node.nodeValue = original.replace(src, val);
+      });
+      attrs.forEach(function (t) {
+        var store = originalAttr.get(t.el);
+        var src = store[t.attr].trim();
+        var val = cacheGet(lang, src);
+        if (val != null) t.el.setAttribute(t.attr, val);
+      });
+      setStatus(langName(lang));
     } finally {
-      translating = false;
-      if (rerunQueued) {
-        rerunQueued = false;
-        clearTimeout(observer._t);
-        observer._t = setTimeout(function () { applyLanguage(currentLang); }, 50);
+      if (myGen === applyGen) {
+        translating = false;
+        if (rerunQueued) {
+          rerunQueued = false;
+          clearTimeout(observer._t);
+          observer._t = setTimeout(function () { applyLanguage(currentLang); }, 50);
+        }
       }
     }
   }
