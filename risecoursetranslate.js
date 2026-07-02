@@ -1212,13 +1212,15 @@
      insides. The bar does not translate them (see getTranslateRoots). It
      only tells them which language to show, by postMessage. */
   function broadcastLangToBlocks(code) {
-    document.querySelectorAll('iframe').forEach(function (frame) {
-      try {
-        if (frame.contentWindow) {
-          frame.contentWindow.postMessage({ type: 'rise-lang', lang: code || 'en' }, '*');
-        }
-      } catch (e) {}
-    });
+    var lang = code || 'en';
+    (function post(win) {
+      var frames;
+      try { frames = win.document.querySelectorAll('iframe'); } catch (e) { return; }
+      frames.forEach(function (f) {
+        try { if (f.contentWindow) f.contentWindow.postMessage({ type: 'rise-lang', lang: lang }, '*'); } catch (e) {}
+        try { if (f.contentWindow) post(f.contentWindow); } catch (e) {}
+      });
+    })(window);
   }
 
   /* A block announces itself when its engine is ready. Answer with the

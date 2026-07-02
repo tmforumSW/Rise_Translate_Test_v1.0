@@ -199,19 +199,30 @@
   }
 
   // Parent course page (the one-liner bar) drives the block.
+  var gotLang = false;
   window.addEventListener("message", function (ev) {
     var d = ev.data || {};
     if (d.type === "rise-lang" && typeof d.lang === "string") {
+      gotLang = true;
       parentControls = true;
       hideOwnSelector();
       setLang(d.lang);
     }
   });
 
-  // Tell the parent we are ready so it can send the current language,
-  // which covers blocks that finish loading after the page.
+  // Announce readiness to the course bar so it sends the current language.
+  // Post to window.top so it arrives no matter how deeply Rise nests this
+  // block, and retry until the bar answers, which covers blocks that mount
+  // after the bar (Rise builds lessons on demand).
+  function announceReady() {
+    if (gotLang) return;
+    try { (window.top || window.parent).postMessage({ type: "rise-ready" }, "*"); } catch (e) {}
+  }
   if (window.parent && window.parent !== window) {
-    try { window.parent.postMessage({ type: "rise-ready" }, "*"); } catch (e) {}
+    announceReady();
+    setTimeout(announceReady, 400);
+    setTimeout(announceReady, 1200);
+    setTimeout(announceReady, 3000);
   }
 
   /* ---------------------- own selector (standalone) ----------------- */
