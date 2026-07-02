@@ -21,6 +21,10 @@
 (function () {
   "use strict";
 
+  // Mark this document so a course-level bar (risecoursetranslate.js) knows
+  // this block manages its own translation, and skips walking its insides.
+  try { document.documentElement.setAttribute("data-tc-managed", "1"); } catch (e) {}
+
   /* ---------------------------- [CONFIG] ---------------------------- */
   var ENGINE = "google";                 // "google" or "deepl"
   var ATTRS  = ["aria-label", "title", "alt", "placeholder"];
