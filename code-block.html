@@ -1,0 +1,82 @@
+<!-- =====================================================================
+     TM Forum translatable code block  (demo content)
+     ---------------------------------------------------------------------
+     This is what goes into a Rise code block. The block does no
+     translating of its own. It just loads translate-core.js from the
+     repo, and that shared file handles everything.
+
+     THE ONE LINE THAT MATTERS is the <script> tag near the bottom. Point
+     its src at the repo copy of translate-core.js:
+
+       Your demo repo:   https://cdn.jsdelivr.net/gh/YOUR-USER/YOUR-REPO@main/translate-core.js
+       Kazeem's repo:    https://cdn.jsdelivr.net/gh/Moyour/risecoursetranslate@main/translate-core.js
+       Local testing:    ./translate-core.js   (same folder, before pushing)
+
+     jsDelivr caches @main hard. After you update the file in the repo,
+     add a version tag (for example @v2) or purge the jsDelivr URL, or the
+     old copy keeps serving.
+     ===================================================================== -->
+<meta charset="utf-8">
+<style>
+  body { font: 17px/1.5 Aptos, 'Aptos Display', 'DM Sans', Calibri, 'Segoe UI', Arial, sans-serif; color: #0D0B4D; margin: 0; padding: 20px; }
+  .cb { max-width: 640px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .lead { color: #545A6E; margin: 0 0 18px; }
+  svg { display: block; max-width: 100%; margin: 6px 0 18px; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 14px 0; }
+  input[type=text] { font: 14px Aptos, 'Segoe UI', Arial, sans-serif; border: 1px solid #E6E6EE; border-radius: 8px; padding: 8px 11px; flex: 1; min-width: 180px; }
+  button { font: 14px Aptos, 'Segoe UI', Arial, sans-serif; border: 1px solid #E6E6EE; border-radius: 8px; padding: 9px 14px; background: #fff; color: #0D0B4D; cursor: pointer; }
+  button:hover { border-color: #D91241; color: #D91241; }
+  .scenario { background: #EEF2FF; border: 1px solid #E6E6EE; border-radius: 10px; padding: 16px; margin-top: 14px; }
+  .scenario h3 { margin: 0 0 8px; font-size: 16px; }
+  .opt { display: block; width: 100%; text-align: left; margin: 6px 0; }
+  .keep { background: #0D0B4D; color: #EAEAF5; border-radius: 8px; padding: 12px 14px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 13px; white-space: pre-wrap; margin-top: 16px; }
+</style>
+
+<div class="cb">
+  <h1>The assurance loop</h1>
+  <p class="lead">An autonomous network runs a continuous loop. Each stage hands off to the next, and the loop repeats without human input.</p>
+
+  <svg viewBox="0 0 480 160" role="img" aria-label="Diagram of the four stage assurance loop">
+    <g fill="none" stroke="#CFD1DC" stroke-width="2">
+      <circle cx="70" cy="80" r="44"/>
+      <circle cx="200" cy="80" r="44"/>
+      <circle cx="330" cy="80" r="44"/>
+      <circle cx="440" cy="80" r="30" stroke="#D91241"/>
+    </g>
+    <text x="70" y="85" text-anchor="middle" font-family="Aptos, Arial" font-size="14" fill="#0D0B4D">Awareness</text>
+    <text x="200" y="85" text-anchor="middle" font-family="Aptos, Arial" font-size="14" fill="#0D0B4D">Analysis</text>
+    <text x="330" y="85" text-anchor="middle" font-family="Aptos, Arial" font-size="14" fill="#0D0B4D">Decision</text>
+    <text x="440" y="85" text-anchor="middle" font-family="Aptos, Arial" font-size="13" fill="#D91241">Execution</text>
+  </svg>
+
+  <div class="controls">
+    <button id="revealBtn" type="button" title="Open a practice scenario" aria-label="Reveal a practice scenario">Show scenario</button>
+    <input type="text" placeholder="Type your answer here" aria-label="Your answer">
+  </div>
+
+  <div id="revealTarget"></div>
+
+  <div class="keep" data-notranslate>intent.set("latency", "&lt; 5ms")
+loop.run(stage="assurance")</div>
+</div>
+
+<script>
+  // Component's own logic: reveal dynamic content on click. The shared
+  // engine catches whatever appears here and translates it.
+  document.getElementById("revealBtn").addEventListener("click", function () {
+    var target = document.getElementById("revealTarget");
+    if (target.childElementCount) { target.innerHTML = ""; return; }
+    target.innerHTML =
+      '<div class="scenario">'
+      + '<h3>Practice scenario</h3>'
+      + '<p>Latency on a premium slice has breached its target. Which stage of the loop detects this first?</p>'
+      + '<button class="opt" type="button">Awareness spots the breach in the telemetry</button>'
+      + '<button class="opt" type="button">Execution reconfigures the slice</button>'
+      + '<button class="opt" type="button">Decision selects a remedy</button>'
+      + '</div>';
+  });
+</script>
+
+<!-- THE ONE LINE: the block consults the repo for its translation engine -->
+<script src="https://cdn.jsdelivr.net/gh/YOUR-USER/YOUR-REPO@main/translate-core.js" defer></script>
