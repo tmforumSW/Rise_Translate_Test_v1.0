@@ -24,7 +24,16 @@
   // Mark this document so a course-level bar (risecoursetranslate.js) knows
   // this block manages its own translation, and skips walking its insides.
   try { document.documentElement.setAttribute("data-tc-managed", "1"); } catch (e) {}
-  try { window.TRANSLATE_CORE_VERSION = "0.7"; } catch (e) {}
+  try { window.TRANSLATE_CORE_VERSION = "0.8"; } catch (e) {}
+  try { window.TC_STATS = window.TC_STATS || { observerFires: 0, cacheReapplies: 0, fullPasses: 0, netFetches: 0 }; } catch (e) {}
+  // Set window.TC_DEBUG = true (before or after load) to log the counters
+  // every two seconds. A fast-climbing cacheReapplies count means a block is
+  // fighting the engine; a near-flat count means it is stable.
+  setInterval(function () {
+    if (window.TC_DEBUG && window.TC_STATS) {
+      try { console.log("[translate-core]", JSON.stringify(window.TC_STATS)); } catch (e) {}
+    }
+  }, 2000);
 
   /* ---------------------------- [CONFIG] ---------------------------- */
   var ENGINE = "google";                 // "google" or "deepl"
@@ -81,6 +90,7 @@
 
   /* ---------------------------- [OBSERVE] --------------------------- */
   var observer = new MutationObserver(function () {
+    if (window.TC_STATS) window.TC_STATS.observerFires++;
     if (currentLang === "en") return;
     reapplyFromCache();
     if (translating) { rerunQueued = true; return; }
@@ -127,6 +137,7 @@
       cache[key] = src;
       return Promise.resolve({ value: src, cached: false });
     }
+    if (window.TC_STATS) window.TC_STATS.netFetches++;
     return translateText(src, lang).then(function (out) {
       cache[key] = out;
       return { value: out, cached: false };
@@ -172,6 +183,7 @@
       if (n.nodeValue !== target) {
         if (!originalText.has(n)) originalText.set(n, n.nodeValue);
         n.nodeValue = target;
+        if (window.TC_STATS) window.TC_STATS.cacheReapplies++;
       }
     }
   }
@@ -180,6 +192,7 @@
     if (!root) return;
     var myGen = ++applyGen;          // a newer call supersedes this one
     translating = true;
+    if (window.TC_STATS) window.TC_STATS.fullPasses++;
     try {
       var nodes = collectTextNodes();
       var attrs = collectAttrTargets();
@@ -221,7 +234,9 @@
         var original = originalText.get(node);
         var src = original.trim();
         var val = cacheGet(lang, src);
-        if (val != null) node.nodeValue = original.replace(src, val);
+        if (val == null) return;
+        var target = original.replace(src, val);
+        if (node.nodeValue !== target) node.nodeValue = target;
       });
       attrs.forEach(function (t) {
         var store = originalAttr.get(t.el);
