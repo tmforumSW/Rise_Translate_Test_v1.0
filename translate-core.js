@@ -24,7 +24,7 @@
   // Mark this document so a course-level bar (risecoursetranslate.js) knows
   // this block manages its own translation, and skips walking its insides.
   try { document.documentElement.setAttribute("data-tc-managed", "1"); } catch (e) {}
-  try { window.TRANSLATE_CORE_VERSION = "0.6"; } catch (e) {}
+  try { window.TRANSLATE_CORE_VERSION = "0.7"; } catch (e) {}
 
   /* ---------------------------- [CONFIG] ---------------------------- */
   var ENGINE = "google";                 // "google" or "deepl"
@@ -82,6 +82,7 @@
   /* ---------------------------- [OBSERVE] --------------------------- */
   var observer = new MutationObserver(function () {
     if (currentLang === "en") return;
+    reapplyFromCache();
     if (translating) { rerunQueued = true; return; }
     clearTimeout(observer._t);
     observer._t = setTimeout(function () { applyLanguage(currentLang); }, 250);
@@ -139,6 +140,40 @@
   function langName(lang) {
     for (var i = 0; i < LANGS.length; i++) if (LANGS[i].code === lang) return LANGS[i].name;
     return lang;
+  }
+
+  // Instant, cache-only correction. Runs inside the observer callback, which
+  // fires before the browser paints, so if a block swaps in text we have
+  // already translated (a height measure, a re-render, a settle-back), we
+  // snap it to the translation in the same tick and the English never shows.
+  // Block-agnostic: no knowledge of the block is needed, and blocks are not
+  // edited. Text only, and cache only. Genuinely new text is left for the
+  // debounced full pass, which fetches it.
+  function reapplyFromCache() {
+    if (!root || currentLang === "en") return;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        var p = node.parentElement;
+        if (!p) return NodeFilter.FILTER_REJECT;
+        var tag = p.tagName.toLowerCase();
+        if (tag === "script" || tag === "style") return NodeFilter.FILTER_REJECT;
+        if (p.closest("[data-notranslate]")) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var n;
+    while ((n = walker.nextNode())) {
+      var original = originalText.has(n) ? originalText.get(n) : n.nodeValue;
+      var src = original.trim();
+      var val = cacheGet(currentLang, src);
+      if (val == null) continue;
+      var target = original.replace(src, val);
+      if (n.nodeValue !== target) {
+        if (!originalText.has(n)) originalText.set(n, n.nodeValue);
+        n.nodeValue = target;
+      }
+    }
   }
 
   async function applyLanguage(lang) {
