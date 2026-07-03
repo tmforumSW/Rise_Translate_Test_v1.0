@@ -24,6 +24,7 @@
   var GLOSSARY_FETCH_FILES = ['Translation Glossary.csv', 'glossary.csv'];
 
   var LANGUAGES = [
+    { code: 'en', label: 'English' },
     { code: 'af', label: 'Afrikaans' },
     { code: 'ar', label: 'Arabic', rtl: true },
     { code: 'zh', label: 'Chinese (Simplified)' },
@@ -261,7 +262,7 @@
     var trigger = document.createElement('button');
     trigger.className = 'rt-trigger';
     trigger.type = 'button';
-    trigger.innerHTML = '<span class="rt-trigger-text">Select language</span><span class="rt-caret">▼</span>';
+    trigger.innerHTML = '<span class="rt-trigger-text">English</span><span class="rt-caret">▼</span>';
 
     /* panel */
     var panel = document.createElement('div');
@@ -614,7 +615,7 @@
     if (!bar) return;
     var txt = bar.querySelector('.rt-trigger-text');
     if (!txt) return;
-    if (!code) { txt.textContent = 'Select language'; return; }
+    if (!code) { txt.textContent = 'English'; return; }
     var lang = LANGUAGES.find(function (l) { return l.code === code; });
     txt.textContent = lang ? lang.label : code;
   }
@@ -623,12 +624,22 @@
     var bar = barRef || document.getElementById(BAR_ID);
     if (!bar) return;
     setTriggerLabel(code);
-    saveLang(code);
-    activeTranslation = code;
     list.querySelectorAll('.rt-option').forEach(function (o) {
       o.classList.toggle('rt-selected', o.getAttribute('data-code') === code);
     });
     if (bar._trigger && bar._panel) closePanel(bar._trigger, bar._panel);
+    if (code === 'en') {
+      // English is the source language: restore the original text and tell the
+      // code blocks to reset, rather than sending English through translation.
+      restorePage();
+      clearSavedLang();
+      activeTranslation = 'en';
+      broadcastLangToBlocks('en');
+      if (bar._reset) bar._reset.style.display = 'none';
+      return;
+    }
+    saveLang(code);
+    activeTranslation = code;
     translatePage(code, bar._spinner, null, bar._reset);
   }
 
