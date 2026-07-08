@@ -21,7 +21,7 @@
   window.__riseTranslateLoaded = true;
   window.__riseTranslateVersion = '1.8.9';
   var scriptElRef = document.currentScript;
-  var GLOSSARY_FETCH_FILES = ['Translation Glossary.csv', 'glossary.csv'];
+  var GLOSSARY_FETCH_FILES = ['Translation Glossary.csv', 'Translation_Glossary.csv', 'glossary.csv'];
 
   var LANGUAGES = [
     { code: 'en', label: 'English' },
@@ -662,12 +662,20 @@
     var base = getPageBaseUrl();
     var script = getScriptEl();
     var clean = path.replace(/^\.\//, '');
-    function add(u) {
-      if (u && urls.indexOf(u) === -1) urls.push(u);
-    }
-    try { add(new URL(clean, base).href); } catch (e) { add(clean); }
-    try { add(new URL(clean, window.location.href).href); } catch (e) {}
-    try { add(new URL('./' + clean, base).href); } catch (e) {}
+    var origin = (window.location.origin && window.location.origin !== 'null')
+      ? window.location.origin + '/' : base;
+    // Common places a glossary CSV may be dropped inside a Rise export: next to
+    // index.html (root), or in the content or scormcontent folder.
+    var folders = ['', 'content/', 'scormcontent/'];
+    var bases = [base, window.location.href, origin];
+    function add(u) { if (u && urls.indexOf(u) === -1) urls.push(u); }
+    folders.forEach(function (f) {
+      var name = f + clean;
+      bases.forEach(function (b) {
+        try { add(new URL(name, b).href); } catch (e) {}
+      });
+    });
+    // Last resort: relative to the script's own URL (usually the CDN).
     if (script && script.src) {
       try { add(new URL(clean, script.src).href); } catch (e) {}
     }
@@ -860,7 +868,7 @@
 
   function parseGlossaryCSV(text) {
     var g = emptyGlossary();
-    var lines = text.split(/\r?\n/);
+    var lines = String(text).replace(/^\uFEFF/, '').split(/\r?\n/);
     var start = 0;
     var sourceTargetFormat = false;
     var i, cols, term, type, lang, translation;
