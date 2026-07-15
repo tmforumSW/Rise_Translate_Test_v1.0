@@ -1,4 +1,4 @@
-# risecoursetranslate
+# risecoursetranslate (text edit test only in these brackets)
 
 Live, automatic translation for Articulate Rise courses, including custom code
 blocks. Learners pick a language once and the whole course follows, translated
